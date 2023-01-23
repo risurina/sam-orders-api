@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
-import { handler } from './catalogs';
+import { handlers } from './catalogs';
 // import { getCatalogById, getCatalogs } from '../services/catalog-services';
 
 jest.mock('../services/catalog-services', () => ({
@@ -15,7 +15,7 @@ describe('Catalog', () => {
       httpMethod: 'GET',
     } as APIGatewayProxyEvent;
 
-    const result = await handler(event);
+    const result = await handlers(event);
     const expectedResult = {
       statusCode: 200,
       body: JSON.stringify('get-catalogs'),
@@ -34,7 +34,7 @@ describe('Catalog', () => {
       pathParameters: { id: '1' },
     } as unknown as APIGatewayProxyEvent;
 
-    const result = await handler(event);
+    const result = await handlers(event);
     const expectedResult = {
       statusCode: 200,
       body: JSON.stringify({ message: 'get-catalog-by-id', id: 1 }),
@@ -52,7 +52,7 @@ describe('Catalog', () => {
       httpMethod: 'POST',
     } as unknown as APIGatewayProxyEvent;
 
-    const result = await handler(event);
+    const result = await handlers(event);
     const expectedResult = {
       statusCode: 404,
       body: JSON.stringify({ message: 'Not Found' }),
