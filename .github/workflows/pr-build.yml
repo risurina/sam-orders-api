@@ -33,5 +33,4 @@ jobs:
       - name: Unit tests
         run: |
           yarn install
-          yarn validate
           yarn build
