@@ -1,0 +1,44 @@
+name: Deploy - STAGING
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  server:
+    name: Deploy APIs
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@master
+
+      - name: Install-Test
+        run: |
+          yarn install --frozen-lockfile
+          yarn test
+
+      - name: Install SAM
+        uses: aws-actions/setup-sam@v2
+        with:
+          version: 1.59.0
+
+      - name: Build
+        run: yarn build
+
+      - name: Deploy Stack
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWSENV: staging
+          AWS_SAM_STACK_NAME: orders-api-staging
+          AWS_SAM_S3_BUCKET: orders-aws-sam-artifacts-staging
+          AWS_SAM_S3_PREFIX: orders-staging
+          AWS_SAM_PARAMS_OVERRIDES: "AWSENV=staging StageName=staging"
+        run: |
+          .deploy/aws-sam-deploy-no-sts.sh
