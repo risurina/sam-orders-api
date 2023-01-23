@@ -1,21 +1,9 @@
-import { getCatalogs, getCatalogById } from './catalog-services';
+import { getCatalogs, getCatalogById, catalogs as dummyCatalogs } from './catalog-services';
 
 describe('Catalog Services', () => {
   it('should return catalogs', async () => {
     const result = await getCatalogs();
-    const catalogs = [
-      {
-        id: 1,
-        name: 'node',
-        description: 'Node',
-      },
-      {
-        id: 2,
-        name: 'typescript',
-        description: 'Typescript',
-      },
-    ];
-    expect(result).toEqual(catalogs);
+    expect(result).toEqual(dummyCatalogs);
   });
 
   it('should return catalog by id', async () => {
@@ -24,6 +12,7 @@ describe('Catalog Services', () => {
       id: 1,
       name: 'node',
       description: 'Node',
+      amount: 10,
     };
     expect(result).toEqual(catalog);
   });

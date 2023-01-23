@@ -1,13 +1,10 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import { handlers } from './catalogs';
-// import { getCatalogById, getCatalogs } from '../services/catalog-services';
 
 jest.mock('../services/catalog-services', () => ({
   getCatalogById: (id: string) => ({ message: 'get-catalog-by-id', id }),
   getCatalogs: () => 'get-catalogs',
 }));
-// const getCatalogByIdMock = getCatalogById as jest.Mock;
-// const getCatalogsMock = getCatalogs as jest.Mock;
 
 describe('Catalog', () => {
   it('handler - get catalogs', async () => {

@@ -1,16 +1,18 @@
 import { Catalog } from './../types/catalogs';
 
 // dummy data
-const catalogs: Catalog[] = [
+export const catalogs: Catalog[] = [
   {
     id: 1,
     name: 'node',
     description: 'Node',
+    amount: 10,
   },
   {
     id: 2,
     name: 'typescript',
     description: 'Typescript',
+    amount: 10,
   },
 ];
 
