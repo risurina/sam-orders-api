@@ -33,6 +33,8 @@
     "test": "jest",
     "lint": "eslint . --ext .js,.ts --format=pretty",
     "lint:quiet": "yarn lint --quiet",
-    "lint:fix": "yarn lint --quiet --fix"
+    "lint:fix": "yarn lint --quiet --fix",
+    "build": "sam build --beta-features --template template.yaml",
+    "start": "yarn build && sam local start-api --log-file logs-api.log --env-vars env.json --warm-containers EAGER"
   }
 }

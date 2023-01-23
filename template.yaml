@@ -1,119 +1,282 @@
-# This is the SAM template that represents the architecture of your serverless application
-# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Order APIs
 
-# The AWSTemplateFormatVersion identifies the capabilities of the template
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
-AWSTemplateFormatVersion: 2010-09-09
-Description: >-
-  sam-orders-api
+Globals:
+  Function:
+    Runtime: nodejs16.x
+    Architectures:
+      - x86_64
+    MemorySize: 256
+    Timeout: 90
 
-# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
-Transform:
-- AWS::Serverless-2016-10-31
+Parameters:
+  AWSENV:
+    Type: String
+    AllowedValues:
+      - dev
+      - stage
+      - prod
+      - local
+    Default: local
+  StageName:
+    Type: String
+    Default: dev
 
-# Resources declares the AWS resources that you want to include in the stack
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+Conditions:
+  isDev:
+    Fn::Equals:
+      - Ref: AWSENV
+      - dev
+  isStaging:
+    Fn::Equals:
+      - Ref: AWSENV
+      - stage
+  isProd:
+    Fn::Equals:
+      - Ref: AWSENV
+      - prod
+
 Resources:
-  # Each Lambda function is defined by properties:
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  #BEGIN: Security group
+  OrdersLambdaSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Orders API - Security group and VPC
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+  #END: Security group
 
-  # This is a Lambda function config associated with the source code: get-all-items.js
-  getAllItemsFunction:
+  OrdersApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name:
+        Fn::Sub: orders-api-${AWSENV}
+      Description: Orders API Gateway
+      EndpointConfiguration:
+        Type: REGIONAL
+      TracingEnabled: true
+      StageName:
+        Ref: StageName
+      ApiKeySourceType: HEADER
+      Auth:
+        AddDefaultAuthorizerToCorsPreflight: False # CORS: removes Authorizer from the automatically created OPTIONS methods
+        ApiKeyRequired: false
+        UsagePlan:
+          CreateUsagePlan: PER_API
+          Description: Usage plan for this API
+          Quota:
+            Limit: 100000
+            Period: MONTH
+          Throttle:
+            BurstLimit: 100
+            RateLimit: 50
+      # DefinitionBody:
+      #   Fn::Transform:
+      #     Name: AWS::Include
+      #     Parameters:
+      #       Location: orders.openapi.yaml
+      GatewayResponses:
+        BAD_REQUEST_BODY:
+          ResponseTemplates:
+            application/json: '{"message":$context.error.messageString, "errors": "$context.error.validationErrorString" }'
+      Tags:
+        Name: Orders API Gateway
+        Description: Orders API Gateway
+
+  OrderApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      Description: API Deployment
+      RestApiId:
+        Ref: OrdersApi
+      StageName:
+        Ref: StageName
+
+  OrdersApiUrlMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    DependsOn:
+      - OrderApiDeployment
+    Properties:
+      RestApiId:
+        Ref: OrdersApi
+      Stage:
+        Ref: StageName
+      BasePath: orders
+  #END: Api Gateway
+
+  #BEGIN: IAM Role
+  OrdersLambdaIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Policies:
+        - PolicyName:
+            Fn::Sub: orders-cloudwatch-access-${AWSENV}
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - Fn::Sub: arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/*
+        - PolicyName:
+            Fn::Sub: orders-dynamodb-access-${AWSENV}
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - Fn::GetAtt: OrdersTable.Arn
+                  - Fn::Sub: arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${OrdersTable}/*
+        - PolicyName:
+            Fn::Sub: orders-dynamodb-stream-access-${AWSENV}
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:DescribeStream
+                  - dynamodb:GetRecords
+                  - dynamodb:GetShardIterator
+                  - dynamodb:ListStreams
+                Resource:
+                  - Fn::GetAtt: OrdersTable.StreamArn
+  #END: IAM Role
+
+  #BEGIN: DynamoDB tables
+  OrdersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+        Fn::Sub: orders-${AWSENV}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+  #END: DynamoDB tables
+
+  #BEGIN: Lambda Functions
+  CatalogsApiFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/handlers/get-all-items.getAllItemsHandler
-      Runtime: nodejs16.x
-      Architectures:
-        - x86_64
-      MemorySize: 128
-      Timeout: 100
-      Description: A simple example includes a HTTP get method to get all items from a DynamoDB table.
-      Policies:
-        # Give Create/Read/Update/Delete Permissions to the SampleTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref SampleTable
+      Description: Catalogs API Lambda
+      FunctionName:
+        Fn::Sub: catalogs-api-${AWSENV}
+      Role:
+        Fn::GetAtt: OrdersLambdaIAMRole.Arn
+      CodeUri: src/handlers
+      Handler: catalogs.handlers
+      Tracing: Active
       Environment:
         Variables:
-          # Make table name accessible as environment variable from function code during execution
-          SAMPLE_TABLE: !Ref SampleTable
+          AWSENV:
+            Fn::Sub: ${AWSENV}
+          LOCAL_DYNAMODB_ENDPOINT: ''
+      VpcConfig:
+        SecurityGroupIds:
+          - Ref: OrdersLambdaSG
       Events:
-        Api:
+        OrderList:
           Type: Api
           Properties:
-            Path: /
+            Path: /v1/catalogs
             Method: GET
-  # Each Lambda function is defined by properties:
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-
-  # This is a Lambda function config associated with the source code: get-by-id.js
-  getByIdFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/handlers/get-by-id.getByIdHandler
-      Runtime: nodejs16.x
-      Architectures:
-        - x86_64
-      MemorySize: 128
-      Timeout: 100
-      Description: A simple example includes a HTTP get method to get one item by id from a DynamoDB table.
-      Policies:
-        # Give Create/Read/Update/Delete Permissions to the SampleTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref SampleTable
-      Environment:
-        Variables:
-          # Make table name accessible as environment variable from function code during execution
-          SAMPLE_TABLE: !Ref SampleTable
-      Events:
-        Api:
+            RestApiId:
+              Ref: OrdersApi
+            Stage:
+              Ref: StageName
+        OrderGet:
           Type: Api
           Properties:
-            Path: /{id}
+            Path: /v1/catalogs/{id}
             Method: GET
-  # Each Lambda function is defined by properties:
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-
-  # This is a Lambda function config associated with the source code: put-item.js
-  putItemFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/handlers/put-item.putItemHandler
-      Runtime: nodejs16.x
-      Architectures:
-        - x86_64
-      MemorySize: 128
-      Timeout: 100
-      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
-      Policies:
-        # Give Create/Read/Update/Delete Permissions to the SampleTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref SampleTable
-      Environment:
-        Variables:
-          # Make table name accessible as environment variable from function code during execution
-          SAMPLE_TABLE: !Ref SampleTable
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /
-            Method: POST
-  # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
-
-  # DynamoDB table to store item: {id: &lt;ID&gt;, name: &lt;NAME&gt;}
-  SampleTable:
-    Type: AWS::Serverless::SimpleTable
-    Properties:
-      PrimaryKey:
-        Name: id
-        Type: String
-      ProvisionedThroughput:
-        ReadCapacityUnits: 2
-        WriteCapacityUnits: 2
+            RestApiId:
+              Ref: OrdersApi
+            Stage:
+              Ref: StageName
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+          - catalogs.ts
 
 Outputs:
-  WebEndpoint:
-    Description: "API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  OrdersApi:
+    Description: URL of the API endpoint
+    Value:
+      Fn::Sub: https://${OrdersApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/
+    Export:
+      Name:
+        Fn::Sub: orders-api-url-${AWSENV}
+  OrdersApiId:
+    Description: Api id of OrdersApi
+    Value:
+      Ref: OrdersApi
+    Export:
+      Name:
+        Fn::Sub: orders-api-id-${AWSENV}
+  # OrdersTable:
+  #   Description: Arn of DynamoDB table OrdersTable
+  #   Value:
+  #     Fn::GetAtt: OrdersTable.Arn
+  #   Export:
+  #     Name:
+  #       Fn::Sub: orders-dynamo-table-${AWSENV}
+  # OrdersTableStreamArn:
+  #   Description: Arn of DynamoDB stream from OrdersTable
+  #   Value:
+  #     Fn::GetAtt: OrdersTable.StreamArn
+  #   Export:
+  #     Name:
+  #       Fn::Sub: orders-dynamo-stream-${AWSENV}
+  # OrdersApiFunctionArn:
+  #   Description: Orders Lambda Api Function ARN
+  #   Value:
+  #     Fn::GetAtt: OrdersApiFunction.Arn
+  #   Export:
+  #     Name:
+  #       Fn::Sub: orders-api-lambda-arn-${AWSENV}
+  # OrdersDynamoStreamFunctionArn:
+  #   Description: Orders Dynamo Stream Lambda Function ARN
+  #   Value:
+  #     Fn::GetAtt: OrdersDynamoStreamFunction.Arn
+  #   Export:
+  #     Name:
+  #       Fn::Sub: orders-dynamo-stream-lambda-arn-${AWSENV}

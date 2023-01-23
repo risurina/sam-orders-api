@@ -2,7 +2,10 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getCatalogById, getCatalogs } from '../services/catalog-services';
 import { response, successResponse } from '../services/utils/http';
 
-export const handler = async ({ httpMethod, pathParameters }: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const handlers = async ({
+  httpMethod,
+  pathParameters,
+}: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     let data: any;
     switch (httpMethod) {
@@ -10,6 +13,9 @@ export const handler = async ({ httpMethod, pathParameters }: APIGatewayProxyEve
         const id = pathParameters?.id;
         if (id) {
           data = await getCatalogById(parseInt(id));
+          if (!data) {
+            return response(404, { message: `Catalog with id ${id} not found!` });
+          }
         } else {
           data = await getCatalogs();
         }
