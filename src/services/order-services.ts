@@ -1,16 +1,14 @@
 import { Order } from '../types/orders';
+import { createItem, getItem } from './dynamo/orders';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function createOrder(order: Order): Promise<Order> {
-  // Todo: save order to database
-  return order;
+  const id = uuidv4();
+  const createdOrder = await createItem({ ...order, id });
+  return createdOrder;
 }
 
-export async function getOrderById(id: number): Promise<Order> {
-  // Todo: get order from database
-  return {
-    id,
-    totalAmount: 100,
-    items: [],
-    isEmailSend: true,
-  };
+export async function getOrderById(id: string): Promise<Order> {
+  const order = await getItem({ id });
+  return order;
 }

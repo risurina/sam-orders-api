@@ -1,5 +1,5 @@
 export type Catalog = {
-  id: number;
+  id: string;
   name: string;
   description: string;
   amount: number;

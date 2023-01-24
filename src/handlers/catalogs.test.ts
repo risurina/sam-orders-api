@@ -34,7 +34,7 @@ describe('Catalog', () => {
     const result = await handlers(event);
     const expectedResult = {
       statusCode: 200,
-      body: JSON.stringify({ message: 'get-catalog-by-id', id: 1 }),
+      body: JSON.stringify({ message: 'get-catalog-by-id', id: '1' }),
       headers: {
         'Access-Control-Allow-Credentials': true,
         'Access-Control-Allow-Origin': '*',

@@ -12,7 +12,7 @@ export const handlers = async ({
       case 'GET':
         const id = pathParameters?.id;
         if (id) {
-          data = await getCatalogById(parseInt(id));
+          data = await getCatalogById(id);
           if (!data) {
             return response(404, { message: `Catalog with id ${id} not found!` });
           }

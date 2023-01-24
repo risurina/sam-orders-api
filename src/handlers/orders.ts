@@ -17,7 +17,9 @@ export const handlers = async ({
       case 'GET':
         const id = pathParameters?.id;
         if (id) {
-          data = await getOrderById(parseInt(id));
+          data = await getOrderById(id);
+        } else {
+          return response(404, { message: 'Not Found' });
         }
         break;
       default:
@@ -28,6 +30,7 @@ export const handlers = async ({
   } catch (error) {
     const errorResponse = {
       message: 'Internal service error',
+      error,
     };
     console.error('error', error);
     return response(500, errorResponse);

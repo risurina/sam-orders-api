@@ -1,12 +1,12 @@
 export type OrderItem = {
-  id: number;
+  id: string;
   categoryId: number;
   quantity: number;
   amount: number;
 };
 
 export type Order = {
-  id: number;
+  id: string;
   totalAmount: number;
   items: OrderItem[];
   isEmailSend?: boolean;

@@ -7,9 +7,9 @@ describe('Catalog Services', () => {
   });
 
   it('should return catalog by id', async () => {
-    const result = await getCatalogById(1);
+    const result = await getCatalogById('1');
     const catalog = {
-      id: 1,
+      id: '1',
       name: 'node',
       description: 'Node',
       amount: 10,
