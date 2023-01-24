@@ -1,5 +1,6 @@
 import { Order } from '../types/orders';
 import { createItem as _createOrder, getItem } from './dynamo/orders';
+import { createItem as _createJob } from './dynamo/jobs';
 import { v4 as uuidv4 } from 'uuid';
 import { getCatalogById } from './catalog-services';
 
@@ -20,6 +21,17 @@ export async function createOrder(order: Order): Promise<Order | any> {
 
   const item = { ...order, id: uuidv4(), isEmailSend: false, item: orderItem };
   const createdOrder = await _createOrder(item);
+
+  // create job
+  const job = await _createJob({
+    id: uuidv4(),
+    type: 'send-order-email',
+    payload: {
+      orderId: createdOrder.id,
+    },
+  });
+  console.debug('job created', job);
+
   return createdOrder;
 }
 

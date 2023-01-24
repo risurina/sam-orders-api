@@ -1,13 +1,18 @@
 import { unmarshall } from '@aws-sdk/util-dynamodb';
 import { AWSENV } from '../../common/config';
 import { Order } from '../../types/orders';
-import { create, get, scan } from '../aws/dynamo-service';
+import { create, get, scan, update } from '../aws/dynamo-service';
 
 const TABLE_NAME = `orders-${AWSENV}`;
 
 type Item = Order;
 
 type Keys = Pick<Order, 'id'>;
+
+type KeyValue = {
+  name: string;
+  value: any;
+};
 
 export async function createItem(item: Item): Promise<Item> {
   await create(TABLE_NAME, { id: item.id }, item);
@@ -66,4 +71,31 @@ export async function getItemByColumn(filter: { [key: string]: string }): Promis
 
   const items = response.Items || [];
   return items.map((item) => unmarshall(item)) as Item[];
+}
+
+function getDynamoUpdateExpressions(input: KeyValue[]) {
+  const UpdateExpression = 'set ' + input.map((kv) => `${kv.name} = :${kv.name}`).join(',');
+  const ExpressionAttributeValues = {} as any; // eslint-disable-line
+  input.forEach((kv) => {
+    ExpressionAttributeValues[`:${kv.name}`] = kv.value;
+  });
+  return { UpdateExpression, ExpressionAttributeValues };
+}
+
+export async function updateItem(item: Partial<Item>): Promise<Item> {
+  const { isEmailSend } = item;
+  const updates: KeyValue[] = [];
+  if (isEmailSend !== undefined && isEmailSend !== null) {
+    updates.push({ name: 'isEmailSend', value: isEmailSend });
+  }
+
+  const { UpdateExpression, ExpressionAttributeValues } = getDynamoUpdateExpressions(updates);
+  const input = {
+    TableName: TABLE_NAME,
+    Key: { id: item.id },
+    UpdateExpression,
+    ExpressionAttributeValues,
+  };
+  const response = await update(input);
+  return response.Attributes as Item;
 }

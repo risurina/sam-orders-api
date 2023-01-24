@@ -255,6 +255,42 @@ Resources:
         Sourcemap: true
         EntryPoints:
           - orders.ts
+
+  JobsDynamoStreamFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      Description: Jobs Stream Lambda
+      FunctionName:
+        Fn::Sub: jobs-dynamo-stream-${AWSENV}
+      Role:
+        Fn::GetAtt: OrdersLambdaIAMRole.Arn
+      CodeUri: src/handlers/streams
+      Handler: jobs.handlers
+      Tracing: Active
+      MemorySize: 512
+      Timeout: 120
+      Environment:
+        Variables:
+          AWSENV:
+            Fn::Sub: ${AWSENV}
+          LOCAL_POSTGRES_URL: ''
+      Events:
+        DynamoDBOrdersTable:
+          Type: DynamoDB
+          Properties:
+            Stream:
+              Fn::GetAtt: JobsTable.StreamArn
+            StartingPosition: LATEST
+            BatchSize: 1
+            MaximumBatchingWindowInSeconds: 1
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+          - jobs.ts
   #END: Lambda Function
 
 Outputs:
