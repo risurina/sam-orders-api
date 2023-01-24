@@ -18,8 +18,8 @@ export const handlers = async ({
         const id = pathParameters?.id;
         if (id) {
           data = await getOrderById(parseInt(id));
-          break;
         }
+        break;
       default:
         return response(404, { message: 'Not Found' });
     }
@@ -29,6 +29,7 @@ export const handlers = async ({
     const errorResponse = {
       message: 'Internal service error',
     };
+    console.error('error', error);
     return response(500, errorResponse);
   }
 };

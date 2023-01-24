@@ -3,6 +3,7 @@ import { handlers } from './orders';
 
 jest.mock('../services/order-services', () => ({
   createOrder: (body: any) => body,
+  getOrderById: (id: number) => ({ id }),
 }));
 
 describe('Catalog', () => {
@@ -22,6 +23,25 @@ describe('Catalog', () => {
       },
     };
 
+    expect(result).toEqual(expectedResult);
+  });
+
+  it('get order', async () => {
+    const event = {
+      httpMethod: 'GET',
+      pathParameters: { id: '1' },
+    } as unknown as APIGatewayProxyEvent;
+
+    const result = await handlers(event);
+    console.debug('result', result);
+    const expectedResult = {
+      statusCode: 200,
+      body: JSON.stringify({ id: 1 }),
+      headers: {
+        'Access-Control-Allow-Credentials': true,
+        'Access-Control-Allow-Origin': '*',
+      },
+    };
     expect(result).toEqual(expectedResult);
   });
 
