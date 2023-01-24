@@ -7,7 +7,7 @@ export type OrderItem = {
 
 export type Order = {
   id: string;
-  totalAmount: number;
-  items: OrderItem[];
+  customerEmail: string;
+  item: OrderItem;
   isEmailSend?: boolean;
 };
