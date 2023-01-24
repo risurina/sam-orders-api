@@ -2,6 +2,7 @@ import { unmarshall } from '@aws-sdk/util-dynamodb';
 import { DynamoDBStreamEvent, DynamoDBRecord } from 'aws-lambda';
 import { getOrderById } from '../../services/order-services';
 import { updateItem as _updateOrder } from '../../services/dynamo/orders';
+import { deleteItem as _deleteJob } from '../../services/dynamo/jobs';
 import { Job } from '../../types/jobs';
 
 export const handlers = async (event: DynamoDBStreamEvent) => {
@@ -30,11 +31,15 @@ export const handleRecord = async (record: DynamoDBRecord) => {
 };
 
 export const handleJob = async (job: Job) => {
-  const { type, payload } = job;
+  const { id, type, payload } = job;
   console.debug('handle-job', job);
   if (type === 'send-order-email') {
     const { orderId } = payload;
     await sendOrderEmailJob(orderId);
+
+    // delete the job
+    await _deleteJob({ id });
+    console.debug('job-success', { id });
   }
 };
 
@@ -44,6 +49,12 @@ export const sendOrderEmailJob = async (orderId: string) => {
   console.debug('send-order-email', { order });
 
   // send email
+  if (!sendEmail()) {
+    console.error('send-order-email: email failed');
+    await _updateOrder({ id: order.id, emailStatus: 'failed' });
+    return;
+  }
+
   const updateOrderResult = await _updateOrder({ id: order.id, emailStatus: 'sent' });
   console.debug('order-updated', updateOrderResult);
 };
