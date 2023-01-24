@@ -36,7 +36,7 @@ describe('Catalog', () => {
     console.debug('result', result);
     const expectedResult = {
       statusCode: 200,
-      body: JSON.stringify({ id: 1 }),
+      body: JSON.stringify({ id: '1' }),
       headers: {
         'Access-Control-Allow-Credentials': true,
         'Access-Control-Allow-Origin': '*',
