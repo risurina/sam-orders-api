@@ -10,6 +10,7 @@ import {
   UpdateCommandOutput,
   GetCommandOutput,
   PutCommandOutput,
+  DeleteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { AWS } from '../../common/config';
 
@@ -135,5 +136,14 @@ export async function scan(input: ScanCommandInput): Promise<ScanCommandOutput> 
   const data = await ddbDocClient.send(new ScanCommand(params));
   // console.debug('Success. Item details: ', data);
   // console.debug('Success. Item details: ', data.Items);
+  return data;
+}
+
+export async function _delete(TableName: string, Key: { [key: string]: string }) {
+  const params = {
+    TableName,
+    Key,
+  };
+  const data = await ddbDocClient.send(new DeleteCommand(params));
   return data;
 }
