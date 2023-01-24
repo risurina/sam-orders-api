@@ -19,7 +19,7 @@ export async function createOrder(order: Order): Promise<Order | any> {
     amount: order?.item?.quantity * catalog.amount,
   };
 
-  const item = { ...order, id: uuidv4(), isEmailSend: false, item: orderItem };
+  const item = { ...order, id: uuidv4(), emailStatus: 'pending', item: orderItem };
   const createdOrder = await _createOrder(item);
 
   // create job

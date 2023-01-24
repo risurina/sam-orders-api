@@ -83,10 +83,10 @@ function getDynamoUpdateExpressions(input: KeyValue[]) {
 }
 
 export async function updateItem(item: Partial<Item>): Promise<Item> {
-  const { isEmailSend } = item;
+  const { emailStatus } = item;
   const updates: KeyValue[] = [];
-  if (isEmailSend !== undefined && isEmailSend !== null) {
-    updates.push({ name: 'isEmailSend', value: isEmailSend });
+  if (emailStatus !== undefined && emailStatus !== null) {
+    updates.push({ name: 'emailStatus', value: emailStatus });
   }
 
   const { UpdateExpression, ExpressionAttributeValues } = getDynamoUpdateExpressions(updates);
@@ -96,6 +96,7 @@ export async function updateItem(item: Partial<Item>): Promise<Item> {
     UpdateExpression,
     ExpressionAttributeValues,
   };
+
   const response = await update(input);
   return response.Attributes as Item;
 }

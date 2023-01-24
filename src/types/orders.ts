@@ -9,5 +9,5 @@ export type Order = {
   id: string;
   customerEmail: string;
   item: OrderItem;
-  isEmailSend?: boolean;
+  emailStatus: 'pending' | 'sent' | 'failed';
 };

@@ -44,7 +44,7 @@ export const sendOrderEmailJob = async (orderId: string) => {
   console.debug('send-order-email', { order });
 
   // send email
-  const updateOrderResult = await _updateOrder(orderId, { isEmailSend: true });
+  const updateOrderResult = await _updateOrder({ id: order.id, emailStatus: 'sent' });
   console.debug('order-updated', updateOrderResult);
 };
 
