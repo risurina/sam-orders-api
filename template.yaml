@@ -38,22 +38,6 @@ Conditions:
       - prod
 
 Resources:
-  #BEGIN: Security group
-  OrdersLambdaSG:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Orders API - Security group and VPC
-      SecurityGroupEgress:
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-          CidrIp: 0.0.0.0/0
-  #END: Security group
-
   OrdersApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -90,26 +74,6 @@ Resources:
       Tags:
         Name: Orders API Gateway
         Description: Orders API Gateway
-
-  OrderApiDeployment:
-    Type: AWS::ApiGateway::Deployment
-    Properties:
-      Description: API Deployment
-      RestApiId:
-        Ref: OrdersApi
-      StageName:
-        Ref: StageName
-
-  OrdersApiUrlMapping:
-    Type: AWS::ApiGateway::BasePathMapping
-    DependsOn:
-      - OrderApiDeployment
-    Properties:
-      RestApiId:
-        Ref: OrdersApi
-      Stage:
-        Ref: StageName
-      BasePath: orders
   #END: Api Gateway
 
   #BEGIN: IAM Role
@@ -206,11 +170,8 @@ Resources:
           AWSENV:
             Fn::Sub: ${AWSENV}
           LOCAL_DYNAMODB_ENDPOINT: ''
-      VpcConfig:
-        SecurityGroupIds:
-          - Ref: OrdersLambdaSG
       Events:
-        OrderList:
+        CatalogList:
           Type: Api
           Properties:
             Path: /v1/catalogs
@@ -219,7 +180,7 @@ Resources:
               Ref: OrdersApi
             Stage:
               Ref: StageName
-        OrderGet:
+        CatalogGet:
           Type: Api
           Properties:
             Path: /v1/catalogs/{id}
@@ -236,6 +197,51 @@ Resources:
         Sourcemap: true
         EntryPoints:
           - catalogs.ts
+
+  OrdersApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Orders API Lambda
+      FunctionName:
+        Fn::Sub: orders-api-${AWSENV}
+      Role:
+        Fn::GetAtt: OrdersLambdaIAMRole.Arn
+      CodeUri: src/handlers
+      Handler: orders.handlers
+      Tracing: Active
+      Environment:
+        Variables:
+          AWSENV:
+            Fn::Sub: ${AWSENV}
+          LOCAL_DYNAMODB_ENDPOINT: ''
+      Events:
+        OrderCreate:
+          Type: Api
+          Properties:
+            Path: /v1/orders
+            Method: POST
+            RestApiId:
+              Ref: OrdersApi
+            Stage:
+              Ref: StageName
+        OrderGet:
+          Type: Api
+          Properties:
+            Path: /v1/orders/{id}
+            Method: GET
+            RestApiId:
+              Ref: OrdersApi
+            Stage:
+              Ref: StageName
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+          - orders.ts
+  #END: Lambda Function
 
 Outputs:
   OrdersApi:

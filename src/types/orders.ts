@@ -4,6 +4,7 @@ export type OrderItem = {
   quantity: number;
   amount: number;
 };
+
 export type Order = {
   id: number;
   totalAmount: number;
