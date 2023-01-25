@@ -1,14 +1,19 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { getCatalogById, getCatalogs } from '../services/catalog-services';
+import { getCatalogById, getCatalogs, createCatalog } from '../services/catalog-services';
 import { response, successResponse } from '../services/utils/http';
 
 export const handlers = async ({
   httpMethod,
   pathParameters,
+  body: bodyString,
 }: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     let data: any;
     switch (httpMethod) {
+      case 'POST':
+        const body = bodyString ? JSON.parse(bodyString) : undefined;
+        data = await createCatalog(body);
+        break;
       case 'GET':
         const id = pathParameters?.id;
         if (id) {

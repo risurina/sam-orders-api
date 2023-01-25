@@ -1,26 +1,20 @@
 import { Catalog } from './../types/catalogs';
+import { v4 as uuidv4 } from 'uuid';
+import { getItems as _getCatalogs, getItem as getCatalog, createItem as _createCatalog } from './dynamo/catalogs';
 
-// dummy data
-export const catalogs: Catalog[] = [
-  {
-    id: '1',
-    name: 'node',
-    description: 'Node',
-    amount: 10,
-  },
-  {
-    id: '2',
-    name: 'typescript',
-    description: 'Typescript',
-    amount: 10,
-  },
-];
+export async function createCatalog(item: Omit<Catalog, 'id'>): Promise<Catalog> {
+  const catalog = {
+    id: uuidv4(),
+    ...item,
+  };
+
+  return _createCatalog(catalog);
+}
 
 export async function getCatalogs(): Promise<Catalog[]> {
-  return catalogs;
+  return _getCatalogs();
 }
 
 export async function getCatalogById(id: string): Promise<Catalog | null> {
-  const catalog = catalogs.find((c) => c.id === id) || null;
-  return catalog;
+  return getCatalog({ id });
 }

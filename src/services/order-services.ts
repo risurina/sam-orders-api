@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getCatalogById } from './catalog-services';
 
 export async function createOrder(order: Order): Promise<Order | any> {
-  const catalog = await getCatalogById(order?.item?.categoryId);
+  const catalog = await getCatalogById(order?.item?.catalogId);
   if (!catalog) {
     return {
       message: 'Product not found!',
@@ -14,7 +14,7 @@ export async function createOrder(order: Order): Promise<Order | any> {
 
   const orderItem = {
     id: uuidv4(),
-    categoryId: order?.item?.categoryId || '',
+    catalogId: order?.item?.catalogId || '',
     quantity: order?.item?.quantity,
     amount: order?.item?.quantity * catalog.amount,
   };

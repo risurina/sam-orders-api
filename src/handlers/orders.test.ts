@@ -10,13 +10,13 @@ describe('Catalog', () => {
   it('handler - create order', async () => {
     const event = {
       httpMethod: 'POST',
-      body: JSON.stringify({ categoryId: 1 }),
+      body: JSON.stringify({ catalogId: 1 }),
     } as APIGatewayProxyEvent;
 
     const result = await handlers(event);
     const expectedResult = {
       statusCode: 200,
-      body: JSON.stringify({ categoryId: 1 }),
+      body: JSON.stringify({ catalogId: 1 }),
       headers: {
         'Access-Control-Allow-Credentials': true,
         'Access-Control-Allow-Origin': '*',
