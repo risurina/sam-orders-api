@@ -22,6 +22,11 @@ cp env.example.json env.json #copy env.json
 
 yarn #install node modules
 yarn start #build the app then start local API
+#Result
+Mounting CatalogsApiFunction at http://127.0.0.1:3000/v1/catalogs [GET]
+Mounting CatalogsApiFunction at http://127.0.0.1:3000/v1/catalogs/{id} [GET]
+Mounting OrdersApiFunction at http://127.0.0.1:3000/v1/orders [POST]
+Mounting OrdersApiFunction at http://127.0.0.1:3000/v1/orders/{id} [GET]
 
 #Note: Dynamo Stream can only test in development
 ```
