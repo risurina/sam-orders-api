@@ -1,19 +1,20 @@
-import { getCatalogs, getCatalogById, catalogs as dummyCatalogs } from './catalog-services';
+import { getCatalogs, getCatalogById } from './catalog-services';
+import { getItems, getItem, createItem } from './dynamo/catalogs';
+
+jest.mock('./dynamo/catalogs', () => ({
+  getItems: () => [{ id: 1 }],
+  getItem: (id: string) => id,
+  createItem: (item: any) => item,
+}));
 
 describe('Catalog Services', () => {
   it('should return catalogs', async () => {
     const result = await getCatalogs();
-    expect(result).toEqual(dummyCatalogs);
+    expect(result).toEqual([{ id: 1 }]);
   });
 
   it('should return catalog by id', async () => {
     const result = await getCatalogById('1');
-    const catalog = {
-      id: '1',
-      name: 'node',
-      description: 'Node',
-      amount: 10,
-    };
-    expect(result).toEqual(catalog);
+    expect(result).toEqual({ id: '1' });
   });
 });

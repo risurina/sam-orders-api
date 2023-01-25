@@ -120,6 +120,7 @@ Resources:
                   - dynamodb:Scan
                 Resource:
                   - Fn::GetAtt: OrdersTable.Arn
+                  - Fn::GetAtt: CatalogsTable.Arn
                   - Fn::GetAtt: JobsTable.Arn
         - PolicyName:
             Fn::Sub: orders-dynamodb-stream-access-${AWSENV}
@@ -143,6 +144,19 @@ Resources:
     Properties:
       TableName:
         Fn::Sub: orders-${AWSENV}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  CatalogsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+        Fn::Sub: catalogs-${AWSENV}
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: id
@@ -185,6 +199,15 @@ Resources:
             Fn::Sub: ${AWSENV}
           LOCAL_DYNAMODB_ENDPOINT: ''
       Events:
+        CatalogCreate:
+          Type: Api
+          Properties:
+            Path: /v1/catalogs
+            Method: POST
+            RestApiId:
+              Ref: OrdersApi
+            Stage:
+              Ref: StageName
         CatalogList:
           Type: Api
           Properties:

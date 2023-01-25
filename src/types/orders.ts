@@ -1,6 +1,6 @@
 export type OrderItem = {
   id: string;
-  categoryId: number;
+  catalogId: number;
   quantity: number;
   amount: number;
 };

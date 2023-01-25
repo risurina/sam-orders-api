@@ -12,7 +12,7 @@ import {
   PutCommandOutput,
   DeleteCommand,
 } from '@aws-sdk/lib-dynamodb';
-import { AWS } from '../../common/config';
+import { AWS, LOCAL_DYNAMODB_ENDPOINT as endpoint } from '../../common/config';
 
 // see https://github.com/aws/aws-sdk-js-v3/tree/main/lib/lib-dynamodb
 // see https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GettingStarted.NodeJs.03.html#GettingStarted.NodeJs.03.01
@@ -20,6 +20,7 @@ import { AWS } from '../../common/config';
 // see https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GettingStarted.NodeJs.03.html
 
 const ddbClient = new DynamoDBClient({
+  endpoint,
   region: AWS.REGION,
 });
 
