@@ -4,6 +4,7 @@ import { handlers } from './catalogs';
 jest.mock('../services/catalog-services', () => ({
   getCatalogById: (id: string) => ({ message: 'get-catalog-by-id', id }),
   getCatalogs: () => 'get-catalogs',
+  createCatalog: () => 'create-catalog',
 }));
 
 describe('Catalog', () => {
@@ -44,15 +45,15 @@ describe('Catalog', () => {
     expect(result).toEqual(expectedResult);
   });
 
-  it('handler - exception', async () => {
+  it('handler - create catalog', async () => {
     const event = {
       httpMethod: 'POST',
     } as unknown as APIGatewayProxyEvent;
 
     const result = await handlers(event);
     const expectedResult = {
-      statusCode: 404,
-      body: JSON.stringify({ message: 'Not Found' }),
+      statusCode: 200,
+      body: JSON.stringify('create-catalog'),
       headers: {
         'Access-Control-Allow-Credentials': true,
         'Access-Control-Allow-Origin': '*',
