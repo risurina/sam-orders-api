@@ -1,4 +1,4 @@
-import { DynamoDBClient, ScanCommand } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient, DynamoDBClientConfig, ScanCommand } from '@aws-sdk/client-dynamodb';
 import {
   DynamoDBDocument,
   GetCommand,
@@ -19,10 +19,11 @@ import { AWS, LOCAL_DYNAMODB_ENDPOINT as endpoint } from '../../common/config';
 // see https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/dynamodb-example-dynamodb-utilities.html
 // see https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GettingStarted.NodeJs.03.html
 
-const ddbClient = new DynamoDBClient({
-  endpoint,
-  region: AWS.REGION,
-});
+const ddbClientConfig: DynamoDBClientConfig = { region: AWS.REGION };
+if (endpoint) {
+  ddbClientConfig.endpoint = endpoint;
+}
+const ddbClient = new DynamoDBClient(ddbClientConfig);
 
 const marshallOptions = {
   // Whether to automatically convert empty strings, blobs, and sets to `null`.
