@@ -1,0 +1,21 @@
+version: '3.9'
+
+volumes:
+  dynamodata:
+
+services:
+  # runs dynamodb-local
+  dynamodb:
+    container_name: sam-order-api-dynamodb
+    image: amazon/dynamodb-local
+    ports:
+      - '8000:8000'
+    networks:
+      - sam-orders-api
+    volumes:
+      - dynamodata:/home/dynamodblocal
+    command: '-jar DynamoDBLocal.jar -sharedDb -dbPath .'
+
+networks:
+  sam-orders-api:
+    driver: bridge
